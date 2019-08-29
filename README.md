@@ -342,3 +342,95 @@ let EmialMinminute= 30;
 冬天到了，是不是也该用程序员的专业知识给身边的人带来一些温暖呢，源代码与demo已经放到github上，要不试一试？
 
 GitHub：[https://github.com/Vincedream/NodeMail](https://github.com/Vincedream/NodeMail)
+
+## 海外天气更新（by Andrew）
+使用mipang天气来进行更新，注意只支持海外天气站点，因为国内和国外天气页面不一样
+所以新增了一个`foreign.ejs`的模板，来发送海外天气邮件
+### 步骤
+在`main.js`中`部分代码`修改如下
+```js
+// 爬取数据的url
+const OneUrl = "http://wufazhuce.com/";
+//const WeatherUrl = "https://tianqi.moji.com/weather/china/" + local;
+const WeatherUrl = "https://weather.mipang.com/tianqi-315811" //奥斯纳布吕克,请手动打开找自己需要的海外城市天气地址
+
+// 获取国外天气预报（米胖api）
+function getWeatherData() {
+    let p = new Promise(function(resolve, reject) {
+        superagent.get(WeatherUrl).end(function(err, res) {
+            if (err) {
+                reject(err);
+            }
+            let threeDaysData = [];
+            let weatherTip = "";
+            let $ = cheerio.load(res.text);
+            $(".item").each(function(i, elem) {
+                const SingleDay = $(this).find(".tt");
+                threeDaysData.push({
+                    Day: $(SingleDay[0])
+                        .find(".week")
+                        .text()
+                        .replace(/(^\s*)|(\s*$)/g, "") +
+                        $(SingleDay[0])
+                        .find(".day")
+                        .text(),
+                    WeatherImgUrl: $(SingleDay[2])
+                        .find("img")
+                        .attr("src"),
+                    WeatherText: $(SingleDay[3])
+                        .text()
+                        .replace(/(^\s*)|(\s*$)/g, ""),
+                    Temperature: $(SingleDay[1])
+                        .find(".temp1")
+                        .text()
+                        .replace(/(^\s*)|(\s*$)/g, "") + "-" +
+                        $(SingleDay[1])
+                        .find(".temp2")
+                        .text()
+                        .replace(/(^\s*)|(\s*$)/g, ""),
+                    WindDirection: $(SingleDay[4])
+                        .find("img")
+                        .attr("title"),
+                    WindLevel: $(SingleDay[5])
+                        .text()
+                        .replace(/(^\s*)|(\s*$)/g, ""),
+                });
+            });
+            resolve(threeDaysData)
+        });
+    });
+    return p
+}
+
+// 发动邮件
+function sendMail(HtmlData) {
+    const template = ejs.compile(
+        //fs.readFileSync(path.resolve(__dirname, "email.ejs"), "utf8") 
+        fs.readFileSync(path.resolve(__dirname, "foreign.ejs"), "utf8")   //注释掉上面一行，改为这一行利用foreign模板
+    );
+    const html = template(HtmlData);
+
+    let transporter = nodemailer.createTransport({
+        service: EmianService,
+        port: 465,
+        secureConnection: true,
+        auth: EamilAuth
+    });
+
+    let mailOptions = {
+        from: EmailFrom,
+        to: EmailTo,
+        subject: EmailSubject,
+        html: html
+    };
+    transporter.sendMail(mailOptions, (error, info = {}) => {
+        if (error) {
+            console.log(error);
+            sendMail(HtmlData); //再次发送
+        }
+        console.log("邮件发送成功", info.messageId);
+        console.log("静等下一次发送");
+    });
+}
+```
+然后按照上面的正常运行即可
