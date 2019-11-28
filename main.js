@@ -36,8 +36,8 @@ var EmailTo = email
 let EmailSubject = '一封暖暖的小邮件'
 
 //每日发送时间
-let EmailHour = 1
-let EmialMinminute = 04
+let EmailHour = 6
+let EmialMinminute = 00
 
 // 爬取数据的url
 const OneUrl = 'http://wufazhuce.com/'
