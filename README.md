@@ -434,3 +434,176 @@ function sendMail(HtmlData) {
 }
 ```
 然后按照上面的正常运行即可
+
+##  使用数据库来发送给更多人
+
+最近发生了一点小事，然后我把收件人改成自己了，每天早晨6点都能收到自己的一份“暖暖的邮件”，非常感动，想把这份温暖传递给更多人，于是想到了加一个群发模块
+
+实际上nodemailer是有群发功能的，只要在收件人处写一个array即可，但我偏偏不这么简单的搞，一定要用上数据库！要学习一下！
+
+### 知识储备
+
+技术栈：`SQL`，`SQLite`，`Node.js`
+
+### SQLite
+
+为什么选择`SQLite`呢，首先因为东西就像`Excel`一样是一个单独的数据库文件，非常便于携带，同时查询又比较方便，相比`MySQL`、`MongoDB`更加的轻量化，此外因为是`Pm2`挂`Node`，所以我不想单独安装一个`MongoDB`，搞`MySQL`的话权限什么的又特别复杂我又怕和`Apache`冲突出事，所以就选择了`SQLite`
+
+####  基础语法
+
+什么进入退出程序还是要知道的
+
+##### 进入程序
+
+由于macOS系统自带sqlite，直接在terminal中输入sqlite3即可进入
+
+```sqlite
+$ sqlite3
+SQLite version 3.28.0 2019-04-15 14:49:49
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite>
+```
+
+##### 退出程序
+
+在sqlite命令行内输入`.quit`或者`.exit`
+
+```sqlite
+SQLite version 3.28.0 2019-04-15 14:49:49
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite> .exit
+
+SQLite version 3.28.0 2019-04-15 14:49:49
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite> .quit
+```
+
+#####  查看结构
+
+```sqlite
+.schema email
+CREATE TABLE email(
+   ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+   name           CHAR(20)    NOT NULL,
+   dept           CHAR(20)     NOT NULL,
+   email        CHAR(50)
+);
+```
+
+其他操作和SQL操作别无二致，不讲了，感觉基本通用的
+
+##### 设置输出
+
+```sqlite
+sqlite>.header on
+sqlite>.mode column
+sqlite>.timer on
+sqlite>
+```
+
+##### 先加入数据
+
+创建表
+
+```sqlite
+sqlite> CREATE TABLE email(
+   ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+   name           CHAR(20)    NOT NULL,
+   dept           CHAR(20)     NOT NULL,
+   email        CHAR(50)
+);
+```
+
+加入基础数据
+
+```sqlite
+INSERT INTO email (name,dept,email)
+VALUES ( 'A', 'fuwubu', 'a@gmail.com');
+INSERT INTO email (name,dept,email)
+VALUES ( 'B', 'fuwubu', 'b@gmail.com');
+INSERT INTO email (name,dept,email)
+VALUES ( 'C', 'fuwubu', 'c@gmail.com');
+```
+
+然后输入`select * from email;`就可以输出啦
+
+```sqlite
+sqlite> select * from email;
+select * from email;
+ID          name        dept        email      
+----------  ----------  ----------  -----------
+1           A           fuwubu      a@gmail.com
+2           B           fuwubu      b@gmail.com
+3           C           fuwubu      c@gmail.com
+Run Time: real 0.000 user 0.000139 sys 0.000103
+```
+
+
+
+### node导入Sqlite模块
+
+```js
+var sqlite3 = require('sqlite3').verbose()
+var file = './subscribeList.db' //这里写的就是数据库文件的路径
+var db = new sqlite3.Database(file)
+
+function getEmail() {
+  let p = new Promise(function(resolve, reject) {
+    db.all('select email from email', function(err, row) {
+      for (let key in row) {
+        emailList.push(row[key].email)
+      }
+    })
+    setTimeout(() => {
+      resolve(emailList)
+    }, 100);
+  })
+  return p
+}
+
+Promise.all([getEmail()])
+  .then(function(data) {
+    console.log(JSON.stringify(data[0]))
+  })
+  .catch(function(err) {
+    console.log('获取数据失败： ', err)
+  })
+  
+```
+
+在最后一个Promise这里就需要添加其他函数了，然后就可以获得对应的数据了
+
+输出结果：
+
+```bash
+[ 'a@gmail.com', 'b@gmail.com', 'c@gmail.com' ]
+```
+
+### 使用Promise顺序执行
+
+```js
+Promise.all([getOneData(), getWeatherTips(), getWeatherData(), getEmail()])
+    .then(function(data) {
+      HtmlData['todayOneData'] = data[0]
+      HtmlData['weatherTip'] = data[1]
+      HtmlData['threeDaysData'] = data[2]
+      HtmlData['email'] = data[3]
+      sendMail(HtmlData)
+    })
+    .catch(function(err) {
+      getAllDataAndSendMail() //再次获取
+      console.log('获取数据失败： ', err)
+    })
+```
+
+然后修改该修改的邮件以及需要发送的邮件地址即可，用pm2执行就行啦～
+
+
+
+累死我了，但总之感恩节快乐！！！
