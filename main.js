@@ -23,15 +23,15 @@ const local = 'jiangsu/gusu-district'
 let EmianService = '163'
 //发送者邮箱账户SMTP授权码
 let EamilAuth = {
-  user: 'xxxx@163.com',
-  pass: 'xxxx'
+  user: 'xzy565143480@163.com',
+  pass: '582183isbest'
 }
 //发送者昵称与邮箱地址
-let EmailFrom = '"服务部专属机器人" <xxxx@163.com>'
+let EmailFrom = '"服务部专属机器人" <xzy565143480@163.com>'
 
 //接收者邮箱地
-var EmailTo = email
-//let EmailTo = "xxxx@163.com";
+let EmailTo = ["xzy565143480@163.com","13554980843@163.com","2367119466@qq.com","1256620688@qq.com","wcycwcyc@126.com","1661389751@qq.com","986970316@qq.com","WIFIWANGJIhhh@163.com","1137797200@qq.com"]
+//let EmailTo = "xzy565143480@163.com";
 //邮件主题
 let EmailSubject = '一封暖暖的小邮件'
 
@@ -224,7 +224,7 @@ function sendMail(HtmlData) {
 
   let mailOptions = {
     from: EmailFrom,
-    to: HtmlData['email'],
+    to: EmailTo,
     subject: EmailSubject,
     html: html
   }
@@ -255,12 +255,12 @@ function getAllDataAndSendMail() {
   HtmlData['lastDay'] = lastDay
   HtmlData['todaystr'] = todaystr
 
-  Promise.all([getOneData(), getWeatherTips(), getWeatherData(), getEmail()])
+  Promise.all([getOneData(), getWeatherTips(), getWeatherData()])
     .then(function(data) {
       HtmlData['todayOneData'] = data[0]
       HtmlData['weatherTip'] = data[1]
       HtmlData['threeDaysData'] = data[2]
-      HtmlData['email'] = data[3]
+     //HtmlData['email'] = data[3]
       sendMail(HtmlData)
     })
     .catch(function(err) {
